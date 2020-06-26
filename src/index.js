@@ -4,10 +4,12 @@ import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import { RecoilRoot } from 'recoil'
+import Recoilize from './package'
 
 ReactDOM.render(
   <React.StrictMode>
     <RecoilRoot>
+      <Recoilize />
       <App />
     </RecoilRoot>
   </React.StrictMode>,
