@@ -1,9 +1,5 @@
 import {
-  RecoilRoot,
   atom,
-  selector,
-  useRecoilState,
-  useRecoilValue,
 } from 'recoil';
 
 export const listState = atom({
@@ -11,7 +7,7 @@ export const listState = atom({
   default: [],
 })
 
-export const listState2 = atom ({
+export const listState2 = atom({
   key: 'listState2',
   default: [],
 })

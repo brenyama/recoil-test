@@ -1,5 +1,5 @@
 import React from 'react'
-import { listState2 } from '../Atoms/atoms.js'
+import { listState2 } from '../../Atoms/atoms.js'
 import { useRecoilState } from 'recoil'
 import { ListItem } from '../ListItem'
 

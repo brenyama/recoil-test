@@ -1,7 +1,7 @@
 import React from 'react';
 import { ListItem } from '../ListItem';
 import { useRecoilValue, useSetRecoilState, useRecoilState } from 'recoil';
-import { listState } from '../Atoms/atoms.js';
+import { listState } from '../../Atoms/atoms.js';
 
 export function List(props) {
   const [list, setList] = useRecoilState(listState);

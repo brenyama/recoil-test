@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {useRecoilTransactionObserver_UNSTABLE, useRecoilSnapshot, useGotoRecoilSnapshot} from 'recoil';
+import {useRecoilTransactionObserver_UNSTABLE, useRecoilSnapshot, useGotoRecoilSnapshot, useRecoilValue} from 'recoil';
 
-export default function Recoilize() {
+export default function Recoilize(props) {
+
+  // grabs all atoms that were defined to get the initial state
+  const atoms = Object.values(props.atoms)
   
   const [snapshots, setSnapshots] = useState([]);
   const [isRestoredState, setRestoredState] = useState(false);
@@ -12,15 +15,24 @@ export default function Recoilize() {
   // read snapshot when component updated.
   useEffect(() => {
 
-    const atomValues = {};
+    // console.log('this is working')
+    // window.postMessage({
+    //   data: ' we are sending a snapshot....',
+    // })
+
+    atoms.forEach((atom, i) => {
+      console.log(`atom ${atom.key} state is: `, snapshot.getLoadable(atom).contents)
+    })
+
+    const snapshotAtoms = {};
 
     Array.from(snapshot._store.getState().currentTree.atomValues.keys()).forEach(key => {
-      atomValues[key] = snapshot._store.getState().currentTree.atomValues.get(key)
+      snapshotAtoms[key] = snapshot._store.getState().currentTree.atomValues.get(key)
     })
 
     // check if there are atoms
     if (snapshot._store.getState().currentTree.atomValues.size !== 0) {
-      window.localStorage.setItem('atomHistory', JSON.stringify([...JSON.parse(window.localStorage.getItem('atomHistory')), atomValues]))
+      window.localStorage.setItem('atomHistory', JSON.stringify([...JSON.parse(window.localStorage.getItem('atomHistory')), snapshotAtoms]))
     }
   })
 
@@ -30,7 +42,7 @@ export default function Recoilize() {
   }, [])
 
   // THIS IS FOR TIME TRAVEL
-  useRecoilTransactionObserver_UNSTABLE(({ snapshot }) => {
+  useRecoilTransactionObserver_UNSTABLE(({ previousSnapshot, snapshot }) => {
     if (!isRestoredState) {
       setSnapshots([...snapshots, snapshot]);
     } else {

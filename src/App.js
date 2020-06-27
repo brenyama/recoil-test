@@ -1,8 +1,8 @@
 import React from 'react';
 import './App.css';
-import { List } from './List';
-import { List2 } from './List2';
-import { Header } from './Header';
+import { List } from './components/List';
+import { List2 } from './components/List2';
+import { Header } from './components/Header';
 import { listState, listState2 } from './Atoms/atoms.js';
 import {
   useRecoilState,
