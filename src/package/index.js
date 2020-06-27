@@ -3,6 +3,9 @@ import {useRecoilTransactionObserver_UNSTABLE, useRecoilSnapshot, useGotoRecoilS
 
 export default function Recoilize(props) {
 
+  // grabs the React FIBER NODE of the application
+  console.log(document.getElementById('root')._reactRootContainer)
+
   // grabs all atoms that were defined to get the initial state
   const atoms = Object.values(props.atoms)
   
