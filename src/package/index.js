@@ -6,62 +6,64 @@ export default function Recoilize(props) {
   // grabs all atoms that were defined to get the initial state
   const atoms = Object.values(props.atoms)
   
+  /* 
+  TODO: Test time travel to past snapshot once we have pipeline hooked up
+  
   const [snapshots, setSnapshots] = useState([]);
   const [isRestoredState, setRestoredState] = useState(false);
-
   const gotoSnapshot = useGotoRecoilSnapshot();
+  */
+
   const snapshot = useRecoilSnapshot();
   
   // read snapshot when component updated.
   useEffect(() => {
 
-    // console.log('this is working')
-    // window.postMessage({
-    //   data: ' we are sending a snapshot....',
-    // })
+    const filteredSnapshot = {};
 
-    atoms.forEach((atom, i) => {
-      console.log(`atom ${atom.key} state is: `, snapshot.getLoadable(atom).contents)
-    })
-
-    const snapshotAtoms = {};
-
-    Array.from(snapshot._store.getState().currentTree.atomValues.keys()).forEach(key => {
-      snapshotAtoms[key] = snapshot._store.getState().currentTree.atomValues.get(key)
-    })
-
-    // check if there are atoms
-    if (snapshot._store.getState().currentTree.atomValues.size !== 0) {
-      window.localStorage.setItem('atomHistory', JSON.stringify([...JSON.parse(window.localStorage.getItem('atomHistory')), snapshotAtoms]))
+    // if user hasn't triggered 1st re-render, construct filtered snapshot with initial atom state content
+    if (snapshot._store.getState().currentTree.atomValues.size === 0) {
+      atoms.forEach((atom, index) => {
+        filteredSnapshot[atom.key] = {
+          contents: snapshot.getLoadable(atom).contents
+        }
+      })
+    } else {
+      Array.from(snapshot._store.getState().currentTree.atomValues.keys()).forEach(key => {
+        filteredSnapshot[key] = {
+          contents: snapshot._store.getState().currentTree.atomValues.get(key).contents
+        }
+      })
     }
+
+    window.postMessage({
+      data: filteredSnapshot,
+    })
   })
 
-  useEffect(() => {
-    // we should read in default state of the atoms and intialize local storage with that.
-    window.localStorage.setItem('atomHistory', JSON.stringify([]))
-  }, [])
+  // TODO : TEST LATER - THIS IS FOR TIME TRAVEL FEATURE
+  // useRecoilTransactionObserver_UNSTABLE(({ previousSnapshot, snapshot }) => {
+  //   if (!isRestoredState) {
+  //     setSnapshots([...snapshots, snapshot]);
+  //   } else {
+  //     setRestoredState(false);
+  //   }
+  // });
 
-  // THIS IS FOR TIME TRAVEL
-  useRecoilTransactionObserver_UNSTABLE(({ previousSnapshot, snapshot }) => {
-    if (!isRestoredState) {
-      setSnapshots([...snapshots, snapshot]);
-    } else {
-      setRestoredState(false);
-    }
-  });
+  // return (
+  //   <ol>
+  //     {snapshots.map((snapshot, i) => (
+  //       <li key={i}>
+  //         Snapshot {i}
+  //         <button onClick={async () => {
+  //           // another function
+  //           await setRestoredState(true);
+  //           gotoSnapshot(snapshot)
+  //         }}>Restore</button>
+  //       </li>
+  //     ))}
+  //   </ol>
+  // );
 
-  return (
-    <ol>
-      {snapshots.map((snapshot, i) => (
-        <li key={i}>
-          Snapshot {i}
-          <button onClick={async () => {
-            // another function
-            await setRestoredState(true);
-            gotoSnapshot(snapshot)
-          }}>Restore</button>
-        </li>
-      ))}
-    </ol>
-  );
+  return null;
 }
