@@ -39,10 +39,30 @@ export default function Recoilize(props) {
       })
     }
 
-    window.postMessage({
-      data: filteredSnapshot,
-    })
+    // Checks to see if content script has started before sending initial snapshot
+    window.addEventListener('message', ({ data: { action } }) => {
+      console.log('recoilize modules says this is the action:', action)
+
+      // add other actions from dev tool here
+      // TODO: set up time travel feature as case for module to listen for.
+      switch (action) {
+        case 'contentScriptStarted':
+          sendWindowMessage('moduleInitialized', filteredSnapshot);
+          break;
+        default:
+      }
+    });
+
+    // Post message to content script on every re-render of the developers application only if content script has started
+    sendWindowMessage('recordSnapshot', filteredSnapshot)
   })
+
+  const sendWindowMessage = (action, payload) => {
+    window.postMessage({
+      action,
+      payload,
+    })
+  }
 
   // TODO : TEST LATER - THIS IS FOR TIME TRAVEL FEATURE
   // useRecoilTransactionObserver_UNSTABLE(({ previousSnapshot, snapshot }) => {
