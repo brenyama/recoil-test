@@ -3,9 +3,9 @@ import './App.css';
 import { List } from './components/List';
 import { List2 } from './components/List2';
 import { Header } from './components/Header';
-import { listState, listState2 } from './Atoms/atoms.js';
+import { listState, listState2, selectorTest, stateLengths } from './Atoms/atoms.js';
 import {
-  useRecoilState,
+  useRecoilState, useRecoilValue,
 } from 'recoil';
 
 function App() {
@@ -35,6 +35,10 @@ function App() {
         <Header />
         <List />
         <List2 />
+        <br></br>
+        Selector Test: {useRecoilValue(selectorTest)}
+        <br></br>
+        Lengths: {useRecoilValue(stateLengths)}
       </div>
       <button onClick={addItemsToBothLists}>add to both lists</button>
     </div>
