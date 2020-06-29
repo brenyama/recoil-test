@@ -23,10 +23,14 @@ export default function Recoilize(props) {
   useEffect(() => {
 
     const filteredSnapshot = {};
-
+    console.log('below me is _store.getState()')
+    console.log(snapshot._store.getState())
     // if user hasn't triggered 1st re-render, construct filtered snapshot with initial atom state content
     if (snapshot._store.getState().currentTree.atomValues.size === 0) {
       atoms.forEach((atom, index) => {
+        console.log('snapshot.getLoadable of ', atom, ' ------')
+        console.log(snapshot.getLoadable(atom))
+        console.log('------')
         filteredSnapshot[atom.key] = {
           contents: snapshot.getLoadable(atom).contents
         }
