@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import {useRecoilTransactionObserver_UNSTABLE, useRecoilSnapshot, useGotoRecoilSnapshot, useRecoilValue} from 'recoil';
+import {useRecoilTransactionObserver_UNSTABLE, useRecoilSnapshot, useGotoRecoilSnapshot, useRecoilValue, useRecoilValueLoadable} from 'recoil';
 
 export default function Recoilize(props) {
 
+  // DEBUG MESSAGES
   // grabs the React FIBER NODE of the application
-  console.log(document.getElementById('root')._reactRootContainer)
+  // console.log(document.getElementById('root')._reactRootContainer)
 
   // grabs all atoms that were defined to get the initial state
-  const atoms = Object.values(props.atoms)
+  const nodes = Object.values(props.nodes)
+
+  // DEBUG MESSAGES
+  // console.log('these are the nodes provided: ', nodes)
   
   /* 
   TODO: Test time travel to past snapshot once we have pipeline hooked up
@@ -23,29 +27,41 @@ export default function Recoilize(props) {
   useEffect(() => {
 
     const filteredSnapshot = {};
-    console.log('below me is _store.getState()')
-    console.log(snapshot._store.getState())
-    // if user hasn't triggered 1st re-render, construct filtered snapshot with initial atom state content
-    if (snapshot._store.getState().currentTree.atomValues.size === 0) {
-      atoms.forEach((atom, index) => {
-        console.log('snapshot.getLoadable of ', atom, ' ------')
-        console.log(snapshot.getLoadable(atom))
-        console.log('------')
-        filteredSnapshot[atom.key] = {
-          contents: snapshot.getLoadable(atom).contents
-        }
-      })
-    } else {
-      Array.from(snapshot._store.getState().currentTree.atomValues.keys()).forEach(key => {
-        filteredSnapshot[key] = {
-          contents: snapshot._store.getState().currentTree.atomValues.get(key).contents
-        }
-      })
-    }
+    const currentTree = snapshot._store.getState().currentTree;
+    const selectorNodeKeys = Array.from(currentTree.nodeDeps.keys());
+    const atomNodeKeys = Array.from(currentTree.nodeToNodeSubscriptions.keys());
+
+    // DEBUG MESSAGES
+    // console.log('below me is _store.getState()')
+    // console.log(snapshot._store.getState())
+
+    nodes.forEach((node, index) => {
+
+      // DEBUG MESSAGES
+      // console.log('snapshot.getLoadable of ', node, ' ------')
+      // console.log(snapshot.getLoadable(node))
+      // console.log('------')
+
+      const type = atomNodeKeys.includes(node.key) ? 'atom' : selectorNodeKeys.includes(node.key) ? 'selector' : null
+      const contents = snapshot.getLoadable(node).contents;
+      const nodeDeps = currentTree.nodeDeps.get(node.key);
+      const nodeToNodeSubscriptions = currentTree.nodeToNodeSubscriptions.get(node.key);
+
+      filteredSnapshot[node.key] = {
+        type,
+        contents,
+        nodeDeps: nodeDeps ? Array.from(nodeDeps) : [],
+        nodeToNodeSubscriptions : nodeToNodeSubscriptions ? Array.from(nodeToNodeSubscriptions) : []
+      }
+    })
+
+    // Post message to content script on every re-render of the developers application only if content script has started
+    sendWindowMessage('recordSnapshot', filteredSnapshot)
 
     // Checks to see if content script has started before sending initial snapshot
     window.addEventListener('message', ({ data: { action } }) => {
-      console.log('recoilize modules says this is the action:', action)
+      // DEBUG MESSAGES
+      // console.log('recoilize modules says this is the action:', action)
 
       // add other actions from dev tool here
       // TODO: set up time travel feature as case for module to listen for.
@@ -56,9 +72,6 @@ export default function Recoilize(props) {
         default:
       }
     });
-
-    // Post message to content script on every re-render of the developers application only if content script has started
-    sendWindowMessage('recordSnapshot', filteredSnapshot)
   })
 
   const sendWindowMessage = (action, payload) => {

@@ -5,12 +5,12 @@ import App from './App';
 import * as serviceWorker from './serviceWorker';
 import { RecoilRoot } from 'recoil'
 import Recoilize from './package'
-import * as atoms from './Atoms/atoms.js'
+import * as nodes from './Atoms/atoms.js'
 
 ReactDOM.render(
   <React.StrictMode>
     <RecoilRoot>
-      <Recoilize atoms={atoms} />
+      <Recoilize nodes={nodes} />
       <App />
     </RecoilRoot>
   </React.StrictMode>,
