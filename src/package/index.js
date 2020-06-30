@@ -11,7 +11,7 @@ export default function Recoilize(props) {
   const nodes = Object.values(props.nodes)
 
   // DEBUG MESSAGES
-  // console.log('these are the nodes provided: ', nodes)
+  console.log('these are the nodes provided: ', nodes)
   
   /* 
   TODO: Test time travel to past snapshot once we have pipeline hooked up
@@ -28,8 +28,6 @@ export default function Recoilize(props) {
 
     const filteredSnapshot = {};
     const currentTree = snapshot._store.getState().currentTree;
-    const selectorNodeKeys = Array.from(currentTree.nodeDeps.keys());
-    const atomNodeKeys = Array.from(currentTree.nodeToNodeSubscriptions.keys());
 
     // DEBUG MESSAGES
     // console.log('below me is _store.getState()')
@@ -41,8 +39,7 @@ export default function Recoilize(props) {
       // console.log('snapshot.getLoadable of ', node, ' ------')
       // console.log(snapshot.getLoadable(node))
       // console.log('------')
-
-      const type = atomNodeKeys.includes(node.key) ? 'atom' : selectorNodeKeys.includes(node.key) ? 'selector' : null
+      const type = node.__proto__.constructor.name
       const contents = snapshot.getLoadable(node).contents;
       const nodeDeps = currentTree.nodeDeps.get(node.key);
       const nodeToNodeSubscriptions = currentTree.nodeToNodeSubscriptions.get(node.key);
