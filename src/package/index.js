@@ -1,76 +1,74 @@
 import React, { useState, useEffect } from 'react';
-import {useRecoilTransactionObserver_UNSTABLE, useRecoilSnapshot, useGotoRecoilSnapshot, useRecoilValue, useRecoilValueLoadable} from 'recoil';
+import {useRecoilTransactionObserver_UNSTABLE, useRecoilSnapshot, useGotoRecoilSnapshot, useRecoilValue, useRecoilValueLoadable, useRecoilCallback} from 'recoil';
 
 export default function Recoilize(props) {
 
   // DEBUG MESSAGES
-  // grabs the React FIBER NODE of the application
+  // Grabs the React FIBER NODE of the application
   // console.log(document.getElementById('root')._reactRootContainer)
 
-  // grabs all atoms that were defined to get the initial state
+  // Captures all atoms that were defined to get the initial state
   const nodes = Object.values(props.nodes)
-
-  // DEBUG MESSAGES
-  console.log('these are the nodes provided: ', nodes)
-  
-  /* 
-  TODO: Test time travel to past snapshot once we have pipeline hooked up
-  
-  const [snapshots, setSnapshots] = useState([]);
-  const [isRestoredState, setRestoredState] = useState(false);
-  const gotoSnapshot = useGotoRecoilSnapshot();
-  */
 
   const snapshot = useRecoilSnapshot();
   
-  // read snapshot when component updated.
+  // Local state of all previous snapshots to use for time traveling when requested by dev tools.
+  const [snapshots, setSnapshots] = useState([snapshot]);
+  const [isRestoredState, setRestoredState] = useState(false);
+  const gotoSnapshot = useGotoRecoilSnapshot();
+
+  const filteredSnapshot = {};
+  const currentTree = snapshot._store.getState().currentTree;
+
+  // Traverse all atoms and selector state nodes and get value 
+  nodes.forEach((node, index) => {
+    const type = node.__proto__.constructor.name
+    const contents = snapshot.getLoadable(node).contents;
+    const nodeDeps = currentTree.nodeDeps.get(node.key);
+    const nodeToNodeSubscriptions = currentTree.nodeToNodeSubscriptions.get(node.key);
+
+    // Construct node data structure for dev tool to consume
+    filteredSnapshot[node.key] = {
+      type,
+      contents,
+      nodeDeps: nodeDeps ? Array.from(nodeDeps) : [],
+      nodeToNodeSubscriptions : nodeToNodeSubscriptions ? Array.from(nodeToNodeSubscriptions) : []
+    }
+  })
+  
+  // React lifecycle hook on re-render
   useEffect(() => {
-
-    const filteredSnapshot = {};
-    const currentTree = snapshot._store.getState().currentTree;
-
-    // DEBUG MESSAGES
-    // console.log('below me is _store.getState()')
-    // console.log(snapshot._store.getState())
-
-    nodes.forEach((node, index) => {
-
-      // DEBUG MESSAGES
-      // console.log('snapshot.getLoadable of ', node, ' ------')
-      // console.log(snapshot.getLoadable(node))
-      // console.log('------')
-      const type = node.__proto__.constructor.name
-      const contents = snapshot.getLoadable(node).contents;
-      const nodeDeps = currentTree.nodeDeps.get(node.key);
-      const nodeToNodeSubscriptions = currentTree.nodeToNodeSubscriptions.get(node.key);
-
-      filteredSnapshot[node.key] = {
-        type,
-        contents,
-        nodeDeps: nodeDeps ? Array.from(nodeDeps) : [],
-        nodeToNodeSubscriptions : nodeToNodeSubscriptions ? Array.from(nodeToNodeSubscriptions) : []
-      }
-    })
 
     // Post message to content script on every re-render of the developers application only if content script has started
     sendWindowMessage('recordSnapshot', filteredSnapshot)
 
-    // Checks to see if content script has started before sending initial snapshot
-    window.addEventListener('message', ({ data: { action } }) => {
-      // DEBUG MESSAGES
-      // console.log('recoilize modules says this is the action:', action)
+    // Window listener for messages from dev tool UI & background.js
+    window.addEventListener('message', onMessageReceived);
 
-      // add other actions from dev tool here
-      // TODO: set up time travel feature as case for module to listen for.
-      switch (action) {
-        case 'contentScriptStarted':
-          sendWindowMessage('moduleInitialized', filteredSnapshot);
-          break;
-        default:
-      }
-    });
+    // Clears the window event listener.
+    return () => window.removeEventListener('message', onMessageReceived);
+    
   })
 
+  // Listener callback for messages sent to window
+  const onMessageReceived = (msg) => {
+
+    // Add other actions from dev tool here
+    switch (msg.data.action) {
+      // Checks to see if content script has started before sending initial snapshot
+      case 'contentScriptStarted':
+        sendWindowMessage('moduleInitialized', filteredSnapshot);
+        break;
+      // Listens for a request from dev tool to time travel to previous state of the app.
+      case 'snapshotTimeTravel':
+        timeTravelToSnapshot(msg);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Sends window an action and payload message.
   const sendWindowMessage = (action, payload) => {
     window.postMessage({
       action,
@@ -78,29 +76,19 @@ export default function Recoilize(props) {
     })
   }
 
-  // TODO : TEST LATER - THIS IS FOR TIME TRAVEL FEATURE
-  // useRecoilTransactionObserver_UNSTABLE(({ previousSnapshot, snapshot }) => {
-  //   if (!isRestoredState) {
-  //     setSnapshots([...snapshots, snapshot]);
-  //   } else {
-  //     setRestoredState(false);
-  //   }
-  // });
+  // FOR TIME TRAVEL: time travels to a given snapshot, re renders application.
+  const timeTravelToSnapshot = (msg) => {
+   gotoSnapshot(snapshots[msg.data.payload.snapshotIndex])
+  }
 
-  // return (
-  //   <ol>
-  //     {snapshots.map((snapshot, i) => (
-  //       <li key={i}>
-  //         Snapshot {i}
-  //         <button onClick={async () => {
-  //           // another function
-  //           await setRestoredState(true);
-  //           gotoSnapshot(snapshot)
-  //         }}>Restore</button>
-  //       </li>
-  //     ))}
-  //   </ol>
-  // );
+  // FOR TIME TRAVEL: Recoil hook to fire a callback on every snapshot change
+  useRecoilTransactionObserver_UNSTABLE(({ snapshot }) => {
+    if (!isRestoredState) {
+      setSnapshots([...snapshots, snapshot]);
+    } else {
+      setRestoredState(false);
+    }
+  });
 
   return null;
 }
