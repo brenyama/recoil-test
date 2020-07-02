@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {useRecoilTransactionObserver_UNSTABLE, useRecoilSnapshot, useGotoRecoilSnapshot, useRecoilValue, useRecoilValueLoadable, useRecoilCallback} from 'recoil';
 
+// isRestored state disables snapshots from being recorded
+let isRestoredState = false;
+
 export default function Recoilize(props) {
 
   // DEBUG MESSAGES
@@ -14,7 +17,7 @@ export default function Recoilize(props) {
   
   // Local state of all previous snapshots to use for time traveling when requested by dev tools.
   const [snapshots, setSnapshots] = useState([snapshot]);
-  const [isRestoredState, setRestoredState] = useState(false);
+  // const [isRestoredState, setRestoredState] = useState(false);
   const gotoSnapshot = useGotoRecoilSnapshot();
 
   const filteredSnapshot = {};
@@ -39,8 +42,12 @@ export default function Recoilize(props) {
   // React lifecycle hook on re-render
   useEffect(() => {
 
-    // Post message to content script on every re-render of the developers application only if content script has started
-    sendWindowMessage('recordSnapshot', filteredSnapshot)
+    if (!isRestoredState) {
+      // Post message to content script on every re-render of the developers application only if content script has started
+      sendWindowMessage('recordSnapshot', filteredSnapshot)
+    } else {
+      isRestoredState = false;
+    }
 
     // Window listener for messages from dev tool UI & background.js
     window.addEventListener('message', onMessageReceived);
@@ -77,16 +84,19 @@ export default function Recoilize(props) {
   }
 
   // FOR TIME TRAVEL: time travels to a given snapshot, re renders application.
-  const timeTravelToSnapshot = (msg) => {
-   gotoSnapshot(snapshots[msg.data.payload.snapshotIndex])
+  const timeTravelToSnapshot = async (msg) => {
+    // await setRestoredState(true);
+    // await gotoSnapshot(snapshots[msg.data.payload.snapshotIndex]);
+    // await setRestoredState(false);
+
+    isRestoredState = true;
+    await gotoSnapshot(snapshots[msg.data.payload.snapshotIndex]);
   }
 
   // FOR TIME TRAVEL: Recoil hook to fire a callback on every snapshot change
   useRecoilTransactionObserver_UNSTABLE(({ snapshot }) => {
     if (!isRestoredState) {
       setSnapshots([...snapshots, snapshot]);
-    } else {
-      setRestoredState(false);
     }
   });
 
