@@ -9,9 +9,18 @@ export default function Recoilize(props) {
   // DEBUG MESSAGES
   // Grabs the React FIBER NODE of the application
   // console.log(document.getElementById('root')._reactRootContainer)
-
+  
+  // We should ask for Array of atoms and selectors.
   // Captures all atoms that were defined to get the initial state
-  const nodes = Object.values(props.nodes)
+  let nodes = null;
+
+  if (typeof props.nodes === 'object' && !Array.isArray(props.nodes)) {
+    nodes = Object.values(props.nodes);
+  } else if (Array.isArray(props.nodes)) {
+    nodes = props.nodes;
+  } else {
+    console.log('please send an array or object of Recoil atoms & selectors')
+  }
 
   const snapshot = useRecoilSnapshot();
   
