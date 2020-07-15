@@ -4,17 +4,19 @@ import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import { RecoilRoot } from 'recoil'
-import Recoilize from './package'
+import RecoilizeDebugger from './package/_index.ts'
 import * as nodes from './Atoms/atoms.js'
+
+const root = document.getElementById('root');
 
 ReactDOM.render(
   <React.StrictMode>
     <RecoilRoot>
-      <Recoilize nodes={nodes} />
+      <RecoilizeDebugger root={root} nodes={nodes} />
       <App />
     </RecoilRoot>
   </React.StrictMode>,
-  document.getElementById('root')
+  root
 );
 
 // If you want your app to work offline and load faster, you can change

@@ -6,13 +6,14 @@ import {
   useRecoilValue,
   useRecoilValueLoadable,
   useRecoilCallback,
+  Snapshot,
 } from 'recoil';
-import {formatFiberNodes} from './formatFiberNodes';
+import formatFiberNodes from './_formatFiberNodes';
 
 // isRestored state disables snapshots from being recorded
 let isRestoredState = false;
 
-export default function RecoilizeDebugger(props) {
+export default function Recoilize(props: any) {
   // We should ask for Array of atoms and selectors.
   // Captures all atoms that were defined to get the initial state
   let nodes = null;
@@ -23,18 +24,20 @@ export default function RecoilizeDebugger(props) {
     nodes = props.nodes;
   }
 
-  const snapshot = useRecoilSnapshot();
+  const { root } = props;
+
+  const snapshot: any = useRecoilSnapshot();
 
   // Local state of all previous snapshots to use for time traveling when requested by dev tools.
   const [snapshots, setSnapshots] = useState([snapshot]);
   // const [isRestoredState, setRestoredState] = useState(false);
   const gotoSnapshot = useGotoRecoilSnapshot();
 
-  const filteredSnapshot = {};
+  const filteredSnapshot: any = {};
   const currentTree = snapshot._store.getState().currentTree;
 
   // Traverse all atoms and selector state nodes and get value
-  nodes.forEach((node, index) => {
+  nodes.forEach((node: any) => {
     const type = node.__proto__.constructor.name;
     const contents = snapshot.getLoadable(node).contents;
     const nodeDeps = currentTree.nodeDeps.get(node.key);
@@ -71,8 +74,8 @@ export default function RecoilizeDebugger(props) {
     return () => window.removeEventListener('message', onMessageReceived);
   });
 
-  // Listener callback for messages sent to windowf
-  const onMessageReceived = msg => {
+  // Listener callback for messages sent to window
+  const onMessageReceived = (msg: any) => {
     // Add other actions from dev tool here
     switch (msg.data.action) {
       // Checks to see if content script has started before sending initial snapshot
@@ -90,25 +93,25 @@ export default function RecoilizeDebugger(props) {
   };
 
   // Sends window an action and payload message.
-  const sendWindowMessage = (action, payload) => {
+  const sendWindowMessage = (action: any, payload: any) => {
     window.postMessage({
       action,
       payload,
-    });
+    }, '*');
   };
 
-  const createDevToolDataObject = filteredSnapshot => {
+  const createDevToolDataObject = (filteredSnapshot: any) => {
     return {
       filteredSnapshot: filteredSnapshot,
       componentAtomTree: formatFiberNodes(
-        document.getElementById('root')._reactRootContainer._internalRoot
+        root._reactRootContainer._internalRoot
           .current,
       ),
     };
   };
 
   // FOR TIME TRAVEL: time travels to a given snapshot, re renders application.
-  const timeTravelToSnapshot = async msg => {
+  const timeTravelToSnapshot = async (msg: any) => {
     // await setRestoredState(true);
     // await gotoSnapshot(snapshots[msg.data.payload.snapshotIndex]);
     // await setRestoredState(false);
